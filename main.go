@@ -15,47 +15,33 @@ import (
 	"strconv"
 	"time"
 	
+	"github.com/schollz/progressbar/v3"
 	"github.com/eigengrau01/bladegopher/internal/mlp"
 )
 
 func main() {
-	// 784 inputs - 28 x 28 pixels, each pixel is an input
-	// 100 hidden nodes - an arbitrary number
-	// 10 outputs - digits 0 to 9
-	// 0.1 is the learning rate
 	net := mlp.CreateNetwork(784, 200, 10, 0.1)
 
-	mnist := flag.String("mnist", "", "Either train or predict to evaluate neural network")
+	train := flag.Bool("train", false, "Train the Neural Network")
 	file := flag.String("file", "", "File name of 28 x 28 PNG file to evaluate")
 	flag.Parse()
 
-	// train or mass predict to determine the effectiveness of the trained network
-	switch *mnist {
-	case "train":
+	if *train {
 		mnistTrain(&net)
 		mlp.Save(net)
-	case "predict":
-		mlp.Load(&net)
-		mnistPredict(&net)
-	default:
-		// don't do anything
 	}
 
-	// predict individual digit images
 	if *file != "" {
-		// print the image out nicely on the terminal
 		printImage(getImage(*file))
-		// mlp.Load the neural network from file
 		mlp.Load(&net)
-		// predict which number it is
 		fmt.Println("prediction:", mlp.PredictFromImage(net, *file))
 	}
-
 }
 
 func mnistTrain(net *mlp.Network) {
 	rand.Seed(time.Now().UTC().UnixNano())
 	t1 := time.Now()
+	bar := progressbar.Default(5)
 
 	for epochs := 0; epochs < 5; epochs++ {
 		testFile, _ := os.Open("mnist_dataset/mnist_train.csv")
@@ -81,53 +67,14 @@ func mnistTrain(net *mlp.Network) {
 
 			net.Train(inputs, targets)
 		}
+		bar.Add(1)
 		testFile.Close()
 	}
 	elapsed := time.Since(t1)
 	fmt.Printf("\nTime taken to train: %s\n", elapsed)
 }
 
-func mnistPredict(net *mlp.Network) {
-	t1 := time.Now()
-	checkFile, _ := os.Open("mnist_dataset/mnist_test.csv")
-	defer checkFile.Close()
 
-	score := 0
-	r := csv.NewReader(bufio.NewReader(checkFile))
-	for {
-		record, err := r.Read()
-		if err == io.EOF {
-			break
-		}
-		inputs := make([]float64, net.Inputs)
-		for i := range inputs {
-			if i == 0 {
-				inputs[i] = 1.0
-			}
-			x, _ := strconv.ParseFloat(record[i], 64)
-			inputs[i] = (x / 255.0 * 0.999) + 0.001
-		}
-		outputs := net.Predict(inputs)
-		best := 0
-		highest := 0.0
-		for i := 0; i < net.Outputs; i++ {
-			if outputs.At(i, 0) > highest {
-				best = i
-				highest = outputs.At(i, 0)
-			}
-		}
-		target, _ := strconv.Atoi(record[0])
-		if best == target {
-			score++
-		}
-	}
-
-	elapsed := time.Since(t1)
-	fmt.Printf("Time taken to check: %s\n", elapsed)
-	fmt.Println("score:", score)
-}
-
-// print out image on iTerm2; equivalent to imgcat on iTerm2
 func printImage(img image.Image) {
 	var buf bytes.Buffer
 	png.Encode(&buf, img)
@@ -135,7 +82,6 @@ func printImage(img image.Image) {
 	fmt.Printf("\x1b]1337;File=inline=1:%s\a\n", imgBase64Str)
 }
 
-// get the file as an image
 func getImage(filePath string) image.Image {
 	imgFile, err := os.Open(filePath)
 	defer imgFile.Close()

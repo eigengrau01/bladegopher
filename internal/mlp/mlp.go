@@ -11,7 +11,6 @@ import (
 	"gonum.org/v1/gonum/stat/distuv"
 )
 
-// Network is a neural network with 3 layers
 type Network struct {
 	Inputs        int
 	Hiddens       int
@@ -21,7 +20,6 @@ type Network struct {
 	LearningRate  float64
 }
 
-// CreateNetwork creates a neural network with random weights
 func CreateNetwork(input, hidden, output int, rate float64) (net Network) {
 	net = Network{
 		Inputs:       input,
@@ -34,21 +32,17 @@ func CreateNetwork(input, hidden, output int, rate float64) (net Network) {
 	return
 }
 
-// Train the neural network
 func (net *Network) Train(inputData []float64, targetData []float64) {
-	// feedforward
 	inputs := mat.NewDense(len(inputData), 1, inputData)
 	hiddenInputs := dot(net.HiddenWeights, inputs)
 	hiddenOutputs := apply(sigmoid, hiddenInputs)
 	finalInputs := dot(net.OutputWeights, hiddenOutputs)
 	finalOutputs := apply(sigmoid, finalInputs)
 
-	// find errors
 	targets := mat.NewDense(len(targetData), 1, targetData)
 	outputErrors := subtract(targets, finalOutputs)
 	hiddenErrors := dot(net.OutputWeights.T(), outputErrors)
 
-	// backpropagate
 	net.OutputWeights = add(net.OutputWeights,
 		scale(net.LearningRate,
 			dot(multiply(outputErrors, sigmoidPrime(finalOutputs)),
@@ -60,9 +54,7 @@ func (net *Network) Train(inputData []float64, targetData []float64) {
 				inputs.T()))).(*mat.Dense)
 }
 
-// Predict uses the neural network to predict the value given input data
 func (net Network) Predict(inputData []float64) mat.Matrix {
-	// feedforward
 	inputs := mat.NewDense(len(inputData), 1, inputData)
 	hiddenInputs := dot(net.HiddenWeights, inputs)
 	hiddenOutputs := apply(sigmoid, hiddenInputs)
@@ -84,10 +76,6 @@ func sigmoidPrime(m mat.Matrix) mat.Matrix {
 	ones := mat.NewDense(rows, 1, o)
 	return multiply(m, subtract(ones, m)) // m * (1 - m)
 }
-
-//
-// Helper functions to allow easier use of Gonum
-//
 
 func dot(m, n mat.Matrix) mat.Matrix {
 	r, _ := m.Dims()
@@ -142,7 +130,6 @@ func subtract(m, n mat.Matrix) mat.Matrix {
 	return o
 }
 
-// randomly generate a float64 array
 func randomArray(size int, v float64) (data []float64) {
 	dist := distuv.Uniform{
 		Min: -1 / math.Sqrt(v),
@@ -151,7 +138,6 @@ func randomArray(size int, v float64) (data []float64) {
 
 	data = make([]float64, size)
 	for i := 0; i < size; i++ {
-		// data[i] = rand.NormFloat64() * math.Pow(v, -0.5)
 		data[i] = dist.Rand()
 	}
 	return
@@ -168,7 +154,6 @@ func addBiasNodeTo(m mat.Matrix, b float64) mat.Matrix {
 	return a
 }
 
-// pretty print a Gonum matrix
 func matrixPrint(X mat.Matrix) {
 	fa := mat.Formatted(X, mat.Prefix(""), mat.Squeeze())
 	fmt.Printf("%v\n", fa)
@@ -187,7 +172,6 @@ func Save(net Network) {
 	}
 }
 
-// load a neural network from file
 func Load(net *Network) {
 	h, err := os.Open("data/hweights.model")
 	defer h.Close()
@@ -204,8 +188,6 @@ func Load(net *Network) {
 	return
 }
 
-// predict a number from an image
-// image should be 28 x 28 PNG file
 func PredictFromImage(net Network, path string) int {
 	input := dataFromImage(path)
 	output := net.Predict(input)
@@ -221,9 +203,7 @@ func PredictFromImage(net Network, path string) int {
 	return best
 }
 
-// get the pixel data from an image
 func dataFromImage(filePath string) (pixels []float64) {
-	// read the file
 	imgFile, err := os.Open(filePath)
 	defer imgFile.Close()
 	if err != nil {
@@ -234,7 +214,6 @@ func dataFromImage(filePath string) (pixels []float64) {
 		fmt.Println("Cannot decode file:", err)
 	}
 
-	// create a grayscale image
 	bounds := img.Bounds()
 	gray := image.NewGray(bounds)
 
@@ -244,10 +223,7 @@ func dataFromImage(filePath string) (pixels []float64) {
 			gray.Set(x, y, rgba)
 		}
 	}
-	// make a pixel array
 	pixels = make([]float64, len(gray.Pix))
-	// populate the pixel array subtract Pix from 255 because that's how
-	// the MNIST database was trained (in reverse)
 	for i := 0; i < len(gray.Pix); i++ {
 		pixels[i] = (float64(255-gray.Pix[i]) / 255.0 * 0.999) + 0.001
 	}
