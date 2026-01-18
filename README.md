@@ -2,7 +2,7 @@
 
 A CLI app to understand Artificial Neural Networks writen in Golang.
 
-![](/assets/bladegopher.png)
+![](assets/bladegopher.png)
 
 
 ## Install
