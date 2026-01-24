@@ -15,6 +15,7 @@ git clone git@github.com:eigengrau01/bladegopher.git
 Then move to the project directory and build the app.
 ```sh
 cd bladegopher/
+go mod tidy
 go build -o bladegopher
 ```
 
