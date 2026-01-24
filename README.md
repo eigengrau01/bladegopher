@@ -30,7 +30,7 @@ If you don't have Unzip install it:
 sudo apt-get install unzip
 ```
 
-Go back to the root directory and the app is ready to usage.
+Go back to the root directory and the app is ready to use.
 ```sh
 cd ..
 ```
